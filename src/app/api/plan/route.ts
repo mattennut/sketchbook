@@ -34,7 +34,8 @@ export async function POST(request: Request) {
     if (!profile) return jsonError(400, "no_profile", "Take the assessment first.");
 
     const existing = await getActivePlan(db, session.id);
-    const isRebuild = !!existing && existing.specialization === specialization;
+    // Upgrading from the default course to a personalized plan is free; so is switching specialization.
+    const isRebuild = !!existing && existing.source !== "default" && existing.specialization === specialization;
     if (isRebuild && !session.isPaid) {
       return jsonError(402, "paywall", "Rebuilding your plan is part of Sketchbook Plus.");
     }

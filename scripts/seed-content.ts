@@ -12,7 +12,8 @@ import { getDb } from "../src/lib/db";
 import { isStarter, loadCatalog, type CatalogEntry } from "../src/lib/catalog";
 import { generateLessonContentNow } from "../src/lib/content";
 import { aiConfigured } from "../src/lib/ai/client";
-import type { LevelBand } from "../src/lib/skills";
+import { bandFor, type LevelBand } from "../src/lib/skills";
+import { DEFAULT_PROFILE, DEFAULT_WEEK1 } from "../src/lib/plan";
 
 function arg(name: string) {
   const i = process.argv.indexOf(`--${name}`);
@@ -26,8 +27,18 @@ async function main() {
   }
   const db = await getDb();
   const catalog = await loadCatalog(db);
-  const starters = catalog.filter(isStarter);
-  const bands = (arg("band") ? [arg("band")] : ["beginner", "intermediate"]) as LevelBand[];
+  // --default: only the fixed week 1 of the default course (what "skip the test" users open first).
+  const onlyDefault = process.argv.includes("--default");
+  const starters = onlyDefault
+    ? catalog.filter((c) => DEFAULT_WEEK1.includes(c.id))
+    : catalog.filter(isStarter);
+  const bands = (
+    onlyDefault
+      ? [...new Set(starters.map((s) => bandFor(DEFAULT_PROFILE, s.skill)))]
+      : arg("band")
+        ? [arg("band")]
+        : ["beginner", "intermediate"]
+  ) as LevelBand[];
   const kinds = (arg("kind") ? [arg("kind")] : ["deck", "tasks"]) as ("deck" | "tasks")[];
 
   const jobs: { entry: CatalogEntry; band: LevelBand; kind: "deck" | "tasks" }[] = [];

@@ -31,6 +31,15 @@ export default async function PlanPage() {
         Week {now}. <span className="text-ink-muted">{plan.weeks[now - 1]?.theme}</span>
       </h1>
       <p className="mt-5 text-lg leading-relaxed text-ink-soft">{plan.overview}</p>
+      {plan.source === "default" ? (
+        <p className="mt-4 text-[0.95rem] text-ink-muted">
+          You&apos;re on the default course.{" "}
+          <Link href="/assessment" className="link font-medium text-ink-soft">
+            Take the 5-minute skill test
+          </Link>{" "}
+          to reorder it around your weakest skills.
+        </p>
+      ) : null}
 
       <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
         {nextEntry ? (

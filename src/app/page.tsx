@@ -34,6 +34,9 @@ export default function Home() {
               Start free assessment <ArrowRight size={18} aria-hidden="true" />
             </Link>
             <span className="text-sm text-ink-muted">About 5 minutes · no sign-up · nothing to install</span>
+            <Link href="/assessment?mode=default" className="link mt-2 text-[0.95rem] font-medium text-ink-soft">
+              Or skip the test and start the default course
+            </Link>
           </div>
         </div>
 

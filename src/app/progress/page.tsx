@@ -67,11 +67,21 @@ export default async function ProgressPage() {
           </h2>
           <span className="text-sm text-ink-muted">1–5 scale · updates after each critique</span>
         </div>
-        <div className="sheet mt-5 px-5 py-3 sm:px-7">
-          <SkillHistory
-            snapshots={snaps.map((s) => ({ at: s.createdAt.toISOString(), source: s.source, scores: s.scores }))}
-          />
-        </div>
+        {snaps.length ? (
+          <div className="sheet mt-5 px-5 py-3 sm:px-7">
+            <SkillHistory
+              snapshots={snaps.map((s) => ({ at: s.createdAt.toISOString(), source: s.source, scores: s.scores }))}
+            />
+          </div>
+        ) : (
+          <p className="mt-4 text-ink-soft">
+            No skill profile yet — your first critique starts one, or{" "}
+            <Link href="/assessment" className="link">
+              take the 5-minute skill test
+            </Link>
+            .
+          </p>
+        )}
       </section>
 
       <section className="mt-14" aria-labelledby="drawings-h">

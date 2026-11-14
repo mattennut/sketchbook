@@ -86,7 +86,12 @@ export function validatePlan(plan: PlanOutput, eligible: CatalogEntry[], profile
  * Deterministic planner used when the AI is unavailable or fails validation twice.
  * Greedy topological ordering that prefers weak skills, low difficulty and skill variety.
  */
-export function fallbackPlan(profile: SkillScores, spec: Specialization, eligible: CatalogEntry[]): PlanOutput {
+export function fallbackPlan(
+  profile: SkillScores,
+  spec: Specialization,
+  eligible: CatalogEntry[],
+  fixedWeek1?: string[],
+): PlanOutput {
   const remaining = new Map(eligible.map((e) => [e.id, e]));
   const scheduled = new Set<string>();
   const eligibleIds = new Set(eligible.map((e) => e.id));
@@ -104,6 +109,15 @@ export function fallbackPlan(profile: SkillScores, spec: Specialization, eligibl
   for (let week = 1; week <= 12; week++) {
     const size = week === 1 ? 3 : week <= 4 ? 3 : 4;
     const picked: CatalogEntry[] = [];
+    if (week === 1 && fixedWeek1) {
+      for (const id of fixedWeek1) {
+        const e = remaining.get(id);
+        if (!e) continue;
+        picked.push(e);
+        remaining.delete(id);
+        scheduled.add(id);
+      }
+    }
     while (picked.length < size) {
       const candidates = [...remaining.values()].filter(
         (e) => ready(e) && (week > 1 || isStarter(e)),
@@ -191,6 +205,69 @@ export async function buildPlan(opts: {
   const [row] = await db
     .insert(plans)
     .values({ sessionId, specialization, profile, overview: output.overview, weeks, source, isActive: true })
+    .returning();
+  return row;
+}
+
+// ---------------------------------------------------------------------------
+// Default course: for learners who skip the skill test
+// ---------------------------------------------------------------------------
+
+/** Flat beginner profile → every lesson uses the "beginner" level band. */
+export const DEFAULT_PROFILE: SkillScores = {
+  perspective: 2,
+  proportion: 2,
+  value: 2,
+  color: 2,
+  linework: 2,
+  composition: 2,
+};
+
+/** Fixed week 1 of the default course. Its decks + tasks are pre-generated (`npm run seed:default`). */
+export const DEFAULT_WEEK1 = ["line-confidence", "basic-shapes", "value-scale"];
+
+/** Deterministic, instant plan (no AI call). Same week 1 for every specialization. */
+export async function buildDefaultPlan(opts: {
+  db: DB;
+  sessionId: string;
+  specialization: Specialization;
+}): Promise<Plan> {
+  const { db, sessionId, specialization } = opts;
+  const eligible = eligibleFor(await loadCatalog(db), specialization);
+  const output = fallbackPlan(DEFAULT_PROFILE, specialization, eligible, DEFAULT_WEEK1);
+  const byId = catalogById(eligible);
+  const specLabel = SPECIALIZATION_INFO[specialization].label.toLowerCase();
+  const listTitles = (ids: string[]) => {
+    const t = ids.map((id) => byId.get(id)?.title ?? id);
+    return t.length > 1 ? `${t.slice(0, -1).join(", ")} and ${t.at(-1)}` : (t[0] ?? "");
+  };
+  // No skill scores exist on the default course, so weeks are named by topic, not by "your score is…".
+  const weeks: PlanWeek[] = [...output.weeks]
+    .sort((a, b) => a.week - b.week)
+    .map((w) => {
+      if (w.week === 1) {
+        return {
+          ...w,
+          theme: "Foundations: line, shape & value",
+          rationale:
+            "Every drawing rests on three things: confident marks, simple shapes and light versus dark. Start here and everything after gets easier.",
+        };
+      }
+      const topics = [...new Set(w.subtopicIds.map((id) => byId.get(id)?.topicTitle).filter(Boolean))] as string[];
+      const phase =
+        w.week <= 4 ? "Building on the foundations" : w.week <= 8 ? "Putting the basics to work" : `Going deeper toward ${specLabel}`;
+      return {
+        ...w,
+        theme: topics.slice(0, 2).join(" · "),
+        rationale: `${phase}: ${listTitles(w.subtopicIds)}.`,
+      };
+    });
+  const overview = `The Sketchbook default course: twelve weeks that build the fundamentals step by step, leaning toward ${SPECIALIZATION_INFO[specialization].label.toLowerCase()} as you go. Take the five-minute skill test any time to personalize it.`;
+
+  await db.update(plans).set({ isActive: false }).where(eq(plans.sessionId, sessionId));
+  const [row] = await db
+    .insert(plans)
+    .values({ sessionId, specialization, profile: DEFAULT_PROFILE, overview, weeks, source: "default", isActive: true })
     .returning();
   return row;
 }

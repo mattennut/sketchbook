@@ -16,6 +16,7 @@
     "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/migrate.ts",
     "db:seed": "node --env-file-if-exists=.env.local --import tsx scripts/seed-catalog.ts",
     "seed:content": "node --env-file-if-exists=.env.local --import tsx scripts/seed-content.ts",
+    "seed:default": "node --env-file-if-exists=.env.local --import tsx scripts/seed-content.ts --default",
     "samples": "node --import tsx scripts/make-samples.ts"
   },
   "dependencies": {

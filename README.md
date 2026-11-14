@@ -25,6 +25,7 @@ specific feedback on every page — for $12/month.
 ## Try it (jury path, ~3 minutes)
 
 1. Open the site → **Start free assessment** (no account; an anonymous guest session is created).
+   In a hurry? **Or skip the test and start the default course**: pick a direction and get an instant plan whose week 1 (Confident lines, Seeing basic shapes, Value scales) is pre-generated, so lessons open immediately.
 2. Pick a specialization, answer 7 "which looks correct?" perception tests (drawn in SVG in your browser)
    and 3 theory questions. Optional: upload up to 3 past drawings for an AI level estimate.
 3. **Build my 12-week plan** — The AI (OpenAI) selects and orders lessons from a fixed 67-subtopic catalog.
@@ -124,6 +125,7 @@ With PGlite, stop `npm run dev` first (PGlite allows one process at a time).
 | `npm run db:migrate` | Apply migrations to `DATABASE_URL` |
 | `npm run db:seed` | Upsert the curriculum catalog (validated: unknown prerequisites fail the deploy) |
 | `npm run seed:content` | Pre-generate week-1 decks and practice tasks |
+| `npm run seed:default` | Pre-generate only the default course's fixed week 1 (3 decks + 3 task sets) |
 | `npm run samples` | Regenerate the bundled sample drawings in `public/samples/` |
 | `npm run typecheck` / `lint` | Checks |
 

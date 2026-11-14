@@ -50,10 +50,19 @@ type PortfolioState =
   | { status: "done"; id: string; summary: string }
   | { status: "failed"; message: string };
 
-type Phase = "questions" | "scoring" | "result" | "planning";
+type Phase = "questions" | "scoring" | "result" | "planning" | "default";
 
-export function AssessmentFlow({ hasPlan, isPaid }: { hasPlan: boolean; isPaid: boolean }) {
+export function AssessmentFlow({
+  hasPlan,
+  isPaid,
+  defaultMode = false,
+}: {
+  hasPlan: boolean;
+  isPaid: boolean;
+  defaultMode?: boolean;
+}) {
   const router = useRouter();
+  const [skipTest, setSkipTest] = useState(defaultMode);
   const [index, setIndex] = useState(0);
   const [spec, setSpec] = useState<Specialization | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -166,6 +175,30 @@ export function AssessmentFlow({ hasPlan, isPaid }: { hasPlan: boolean; isPaid: 
     }
   };
 
+  /** Skip the skill test: deterministic default course, week 1 pre-generated. */
+  const startDefault = async (chosen: Specialization) => {
+    setPhase("default");
+    setError(null);
+    try {
+      const res = await fetch("/api/plan/default", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ specialization: chosen }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error?.message ?? "Couldn't start the default course.");
+      router.push("/plan");
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't start the default course.");
+      setPhase("questions");
+    }
+  };
+
+  if (phase === "default") {
+    return <InkLoader className="py-24" messages={["Setting up your default course…"]} />;
+  }
+
   if (phase === "scoring") {
     return (
       <InkLoader
@@ -242,7 +275,7 @@ export function AssessmentFlow({ hasPlan, isPaid }: { hasPlan: boolean; isPaid: 
 
   return (
     <section className="mx-auto max-w-3xl">
-      <div className="mb-8 flex items-center gap-4">
+      <div className={`mb-8 flex items-center gap-4 ${skipTest && index === 0 ? "invisible" : ""}`}>
         <button
           type="button"
           onClick={() => setIndex(Math.max(0, index - 1))}
@@ -283,10 +316,11 @@ export function AssessmentFlow({ hasPlan, isPaid }: { hasPlan: boolean; isPaid: 
           <SpecializationStep
             headingRef={headingRef}
             value={spec}
+            skipTest={skipTest}
             onPick={(s) => {
               setSpec(s);
               if (advanceTimer.current) clearTimeout(advanceTimer.current);
-              advanceTimer.current = setTimeout(() => setIndex(1), 320);
+              advanceTimer.current = setTimeout(() => (skipTest ? void startDefault(s) : setIndex(1)), 320);
             }}
           />
         )}
@@ -323,6 +357,27 @@ export function AssessmentFlow({ hasPlan, isPaid }: { hasPlan: boolean; isPaid: 
             allowUnsure
           />
         )}
+      </div>
+
+      <div className="mt-14 border-t border-rule pt-5 text-center text-sm text-ink-muted">
+        {step.kind === "specialization" ? (
+          skipTest ? (
+            <button type="button" className="link" onClick={() => setSkipTest(false)}>
+              Take the 5-minute skill test instead
+            </button>
+          ) : (
+            <>
+              Rather jump straight in?{" "}
+              <button type="button" className="link font-medium text-ink-soft" onClick={() => setSkipTest(true)}>
+                Skip the skill test — use the default course
+              </button>
+            </>
+          )
+        ) : spec ? (
+          <button type="button" className="link font-medium text-ink-soft" onClick={() => void startDefault(spec)}>
+            Skip the rest — start the default course
+          </button>
+        ) : null}
       </div>
     </section>
   );
@@ -371,10 +426,12 @@ function OptionRow({
 function SpecializationStep({
   headingRef,
   value,
+  skipTest,
   onPick,
 }: {
   headingRef: HeadingRef;
   value: Specialization | null;
+  skipTest: boolean;
   onPick: (s: Specialization) => void;
 }) {
   const groups: { title: string; kind: "subject" | "style" }[] = [
@@ -385,9 +442,13 @@ function SpecializationStep({
     <>
       <StepHeading
         headingRef={headingRef}
-        eyebrow="Your focus"
+        eyebrow={skipTest ? "Default course" : "Your focus"}
         title="What do you most want to draw?"
-        sub="Pick one. Your plan leans this way — you can change it later."
+        sub={
+          skipTest
+            ? "Pick one and your 12-week default course starts right away — no test. You can personalize it later."
+            : "Pick one. Your plan leans this way — you can change it later."
+        }
       />
       <div className="grid gap-8 sm:grid-cols-2">
         {groups.map((g) => (

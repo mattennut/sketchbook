@@ -117,7 +117,7 @@ export const plans = pgTable(
     profile: jsonb("profile").$type<SkillScores>().notNull(),
     overview: text("overview").notNull(),
     weeks: jsonb("weeks").$type<PlanWeek[]>().notNull(),
-    source: text("source").$type<"ai" | "fallback">().notNull(),
+    source: text("source").$type<"ai" | "fallback" | "default">().notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     createdAt: createdAt(),
   },
