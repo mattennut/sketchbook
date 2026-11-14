@@ -5,7 +5,7 @@
  *   npm run seed:content                 # all starters, both bands, decks + tasks
  *   npm run seed:content -- --band beginner --kind deck
  *
- * Needs ANTHROPIC_API_KEY. With the embedded PGlite DB, stop `npm run dev` first
+ * Needs OPENAI_API_KEY. With the embedded PGlite DB, stop `npm run dev` first
  * (PGlite allows one process at a time).
  */
 import { getDb } from "../src/lib/db";
@@ -21,7 +21,7 @@ function arg(name: string) {
 
 async function main() {
   if (!aiConfigured()) {
-    console.error("ANTHROPIC_API_KEY is not set (add it to .env.local).");
+    console.error("OPENAI_API_KEY is not set (add it to .env.local).");
     process.exit(1);
   }
   const db = await getDb();

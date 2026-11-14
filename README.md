@@ -27,7 +27,7 @@ specific feedback on every page — for $12/month.
 1. Open the site → **Start free assessment** (no account; an anonymous guest session is created).
 2. Pick a specialization, answer 7 "which looks correct?" perception tests (drawn in SVG in your browser)
    and 3 theory questions. Optional: upload up to 3 past drawings for an AI level estimate.
-3. **Build my 12-week plan** — Claude selects and orders lessons from a fixed 65-subtopic catalog.
+3. **Build my 12-week plan** — The AI (OpenAI) selects and orders lessons from a fixed 65-subtopic catalog.
 4. Open a week-1 lesson (a swipeable mini-deck; ← → keys on desktop), then **Start practice**.
 5. On the submit step use **Try with a sample drawing** to see a full critique without drawing anything,
    or photograph your own page (mobile opens the camera).
@@ -53,13 +53,13 @@ Landing → Assessment → Skill profile → 12-week plan → Lesson deck → Pr
 | **Privacy** | Drawings are stored in **private** Vercel Blob storage and served only through an owner-checked route. Portfolio images are analyzed and discarded. |
 
 All prompts and output schemas are in one file: [`src/lib/ai/prompts.ts`](src/lib/ai/prompts.ts).
-The call wrapper (structured outputs, zod validation, one retry with feedback, refusal handling) is
+The call wrapper (strict structured outputs, zod validation, one retry with feedback, refusal handling) is
 [`src/lib/ai/client.ts`](src/lib/ai/client.ts). The plan is in [`docs/PLAN.md`](docs/PLAN.md).
 
 ### Stack
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Drizzle ORM on Postgres (Neon or Supabase) ·
-Vercel Blob · Claude API (`@anthropic-ai/sdk`, model via `ANTHROPIC_MODEL`) · Stripe Checkout (test mode) · Vercel.
+Vercel Blob · OpenAI API (`openai` SDK, Chat Completions with strict JSON-schema outputs, model via `OPENAI_MODEL`) · Stripe Checkout (test mode) · Vercel.
 
 ## Run locally
 
@@ -67,7 +67,7 @@ Requires Node 22.9+.
 
 ```bash
 npm install
-cp .env.example .env.local   # then add ANTHROPIC_API_KEY
+cp .env.example .env.local   # then add OPENAI_API_KEY
 npm run dev
 ```
 
@@ -75,7 +75,7 @@ Open http://localhost:3000.
 
 **Zero-config mode:** with `DATABASE_URL` empty the app uses an embedded Postgres
 ([PGlite](https://pglite.dev)) stored in `./.data/`, migrates and seeds it on boot, and saves uploads to
-`./.data/uploads`. Without `ANTHROPIC_API_KEY` the assessment and the (deterministic) plan still work, and lessons
+`./.data/uploads`. Without `OPENAI_API_KEY` the assessment and the (deterministic) plan still work, and lessons
 show a friendly "AI not configured" state. Set `DEMO_INSTANT_UNLOCK=true` to test the paid tier without Stripe.
 
 Pre-generate the week-1 lessons (decks + practice tasks for every starter subtopic, both level bands):
@@ -90,8 +90,8 @@ With PGlite, stop `npm run dev` first (PGlite allows one process at a time).
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | prod | Claude API key |
-| `ANTHROPIC_MODEL` | no | Model for all AI calls (default `claude-opus-5-5`) |
+| `OPENAI_API_KEY` | prod | OpenAI API key |
+| `OPENAI_MODEL` | no | Model for all AI calls (default `gpt-5.5`; must support vision + structured outputs) |
 | `AI_DAILY_CAP` | no | Max model calls per UTC day across all users (default 400) |
 | `DATABASE_URL` | prod | Postgres connection string (Neon pooled URL, or Supabase transaction pooler on :6543) |
 | `BLOB_READ_WRITE_TOKEN` | prod | Vercel Blob token (private store for drawings) |
@@ -106,14 +106,14 @@ With PGlite, stop `npm run dev` first (PGlite allows one process at a time).
 1. Push this repo to GitHub and **import it in Vercel** (framework preset: Next.js).
 2. **Database:** Vercel → Storage → add **Neon** (or paste a Supabase pooler URL) so `DATABASE_URL` is set.
 3. **Images:** Vercel → Storage → create a **Blob** store and connect it, which sets `BLOB_READ_WRITE_TOKEN`.
-4. Add `ANTHROPIC_API_KEY`, `STRIPE_SECRET_KEY` (test mode) and `AI_DAILY_CAP` in Project → Settings → Environment Variables.
+4. Add `OPENAI_API_KEY`, `STRIPE_SECRET_KEY` (test mode) and `AI_DAILY_CAP` in Project → Settings → Environment Variables.
 5. Deploy. The `vercel-build` script runs `db:migrate` and `db:seed` (catalog) before `next build`.
 6. **Stripe webhook:** Stripe Dashboard (test mode) → Developers → Webhooks → add endpoint
    `https://<your-domain>/api/stripe/webhook` with events `checkout.session.completed`,
    `checkout.session.async_payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`.
    Copy its signing secret into `STRIPE_WEBHOOK_SECRET` and redeploy.
 7. **Pre-generate week-1 content** against the production database from your machine:
-   `DATABASE_URL=… ANTHROPIC_API_KEY=… npm run seed:content` (or put both in `.env.local`).
+   `DATABASE_URL=… OPENAI_API_KEY=… npm run seed:content` (or put both in `.env.local`).
 
 ## Scripts
 

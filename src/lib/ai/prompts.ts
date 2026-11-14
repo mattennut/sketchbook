@@ -1,5 +1,5 @@
 /**
- * Every prompt Sketchbook sends to Claude, with its zod output schema.
+ * Every prompt Sketchbook sends to the model, with its zod output schema.
  * Schemas double as the structured-output JSON schema (constraints the API can't
  * enforce are passed as descriptions and re-checked by zod after the response).
  */
