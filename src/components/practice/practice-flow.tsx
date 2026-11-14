@@ -78,6 +78,10 @@ export function PracticeFlow({
     setError(null);
     try {
       const isSample = !(body instanceof FormData);
+      if (!isSample) {
+        body.set("subtopicId", subtopicId);
+        body.set("taskId", task.id);
+      }
       const res = await fetch(isSample ? "/api/submissions/sample" : "/api/submissions", {
         method: "POST",
         ...(isSample
