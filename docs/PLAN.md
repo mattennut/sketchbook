@@ -13,7 +13,7 @@ httpOnly cookie, all data server-side).
     setup for local runs and for reviewers cloning the repo.
 - Object storage: **Vercel Blob** (private access) in production.
   - Deviation 2: local filesystem (`.data/uploads`) when no Blob token is set.
-- OpenAI API through server routes only (`OPENAI_MODEL`, default `gpt-5.5`),
+- OpenAI API through server routes only (`OPENAI_MODEL`, default `gpt-5.4-mini`),
   structured outputs + zod validation, one retry with the validation errors.
 - Stripe Checkout (test mode), subscription $12/month, webhook marks the guest paid.
 - Vercel deploy; `vercel-build` runs migrations + catalog seed before `next build`.

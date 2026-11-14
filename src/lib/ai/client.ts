@@ -31,7 +31,7 @@ export const AI_ERROR_COPY: Record<AiErrorCode, string> = {
 };
 
 export function aiModel(): string {
-  return process.env.OPENAI_MODEL || "gpt-5.5";
+  return process.env.OPENAI_MODEL || "gpt-5.4-mini";
 }
 
 export function aiConfigured(): boolean {

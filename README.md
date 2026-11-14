@@ -92,7 +92,7 @@ With PGlite, stop `npm run dev` first (PGlite allows one process at a time).
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `OPENAI_API_KEY` | prod | OpenAI API key |
-| `OPENAI_MODEL` | no | Model for all AI calls (default `gpt-5.5`; must support vision + structured outputs) |
+| `OPENAI_MODEL` | no | Model for all AI calls (default `gpt-5.4-mini`; must support vision + structured outputs) |
 | `AI_DAILY_CAP` | no | Max model calls per UTC day across all users (default 400) |
 | `DATABASE_URL` | prod | Postgres connection string (Neon pooled URL, or Supabase transaction pooler on :6543) |
 | `BLOB_READ_WRITE_TOKEN` | prod | Vercel Blob token (private store for drawings) |
