@@ -1,6 +1,6 @@
 /** Upserts the fixed curriculum catalog (topics + subtopics). Safe to run on every deploy. */
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../src/lib/db/schema";
 import { seedCatalog } from "../src/lib/db/seed-catalog";
 import { SUBTOPICS, TOPICS } from "../src/lib/catalog/data";
@@ -12,9 +12,9 @@ async function main() {
     return;
   }
   validateCatalog();
-  const client = postgres(url, { max: 1, prepare: false, onnotice: () => {} });
-  await seedCatalog(drizzle(client, { schema }));
-  await client.end();
+  const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 15_000 });
+  await seedCatalog(drizzle(pool, { schema }));
+  await pool.end();
   console.log(`Catalog seeded: ${TOPICS.length} topics, ${SUBTOPICS.length} subtopics.`);
 }
 

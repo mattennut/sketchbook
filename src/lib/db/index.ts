@@ -1,15 +1,16 @@
 import path from "node:path";
-import { drizzle as drizzlePostgres, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { Pool } from "pg";
+import { attachDatabasePool } from "@vercel/functions";
+import { drizzle as drizzlePg, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 import { seedCatalog } from "./seed-catalog";
 
-export type DB = PostgresJsDatabase<typeof schema>;
+export type DB = NodePgDatabase<typeof schema>;
 
 const globalForDb = globalThis as unknown as { __sketchbookDb?: Promise<DB> };
 
 /**
- * Returns the database. With DATABASE_URL set we talk to Postgres (Neon/Supabase).
+ * Returns the database. With DATABASE_URL set we talk to Postgres (Supabase/Neon).
  * Without it we fall back to PGlite — an embedded, file-backed Postgres — and run
  * migrations + the catalog seed automatically, so `npm run dev` works with zero setup.
  */
@@ -30,13 +31,23 @@ export function usingEmbeddedDb(): boolean {
 async function createDb(): Promise<DB> {
   const url = process.env.DATABASE_URL;
   if (url) {
-    const client = postgres(url, {
-      // Transaction poolers (Supabase :6543, Neon -pooler) don't support prepared statements.
-      prepare: false,
-      max: process.env.VERCEL ? 1 : 5,
-      idle_timeout: 20,
+    // node-postgres pool + Vercel's attachDatabasePool: idle connections are closed
+    // before a Fluid Compute instance suspends, so a resumed instance never writes to a
+    // socket the pooler already dropped (which used to hang requests until the 300s limit).
+    const pool = new Pool({
+      connectionString: url,
+      max: process.env.VERCEL ? 3 : 5,
+      idleTimeoutMillis: 5_000,
+      connectionTimeoutMillis: 10_000,
+      // Client-side guard: a stuck query fails fast instead of holding the request open.
+      query_timeout: 25_000,
+      keepAlive: true,
     });
-    return drizzlePostgres(client, { schema });
+    // An idle client can be killed server-side (pooler restart, admin terminate);
+    // without a listener that error would crash the process.
+    pool.on("error", (err) => console.warn("[db] idle client error:", err.message));
+    attachDatabasePool(pool);
+    return drizzlePg(pool, { schema });
   }
 
   if (process.env.VERCEL) {
@@ -52,7 +63,7 @@ async function createDb(): Promise<DB> {
   const client = new PGlite(dataDir);
   const db = drizzlePglite(client, { schema });
   await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
-  // PGlite and postgres-js drizzle instances share the same query-builder surface.
+  // PGlite and node-postgres drizzle instances share the same query-builder surface.
   const typed = db as unknown as DB;
   await seedCatalog(typed);
   return typed;

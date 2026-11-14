@@ -1,10 +1,10 @@
 import { sql } from "drizzle-orm";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { SUBTOPICS, TOPICS } from "../catalog/data";
 import * as schema from "./schema";
 
-/** Idempotent upsert of the fixed curriculum catalog. */
-export async function seedCatalog(db: PostgresJsDatabase<typeof schema>) {
+/** Idempotent upsert of the fixed curriculum catalog. Works with any drizzle Postgres driver. */
+export async function seedCatalog(db: PgDatabase<PgQueryResultHKT, typeof schema>) {
   await db
     .insert(schema.topics)
     .values(TOPICS.map((t, i) => ({ ...t, sortOrder: i })))

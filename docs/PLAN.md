@@ -7,7 +7,7 @@ httpOnly cookie, all data server-side).
 ## Stack (and the two deliberate deviations)
 
 - Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4.
-- Postgres via **Drizzle** (`postgres.js` driver) — Neon or Supabase in production.
+- Postgres via **Drizzle** (`pg` / node-postgres pool, registered with Vercel's `attachDatabasePool` so idle connections close before a function suspends; 25 s client-side query timeout) — Supabase or Neon in production.
   - Deviation 1: when `DATABASE_URL` is empty the app falls back to **PGlite**
     (embedded Postgres in WASM, stored in `.data/`). Same schema, same SQL, zero
     setup for local runs and for reviewers cloning the repo.

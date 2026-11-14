@@ -60,7 +60,7 @@ The call wrapper (strict structured outputs, zod validation, one retry with feed
 
 ### Stack
 
-Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Drizzle ORM on Postgres (Neon or Supabase) ·
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Drizzle ORM on Postgres (Supabase or Neon) via node-postgres with Vercel's `attachDatabasePool` ·
 Vercel Blob · OpenAI API (`openai` SDK, Chat Completions with strict JSON-schema outputs, model via `OPENAI_MODEL`) · Stripe Checkout (test mode) · Vercel.
 
 ## Run locally
