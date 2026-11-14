@@ -26,6 +26,8 @@ export const guestSessions = pgTable("guest_sessions", {
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
   freeCritiquesUsed: integer("free_critiques_used").default(0).notNull(),
+  /** Drawing tools the learner has (EQUIPMENT ids). Null = never asked. */
+  equipment: jsonb("equipment").$type<string[]>(),
   // Reserved for the optional "save your progress with email" feature.
   email: text("email"),
 });
@@ -46,6 +48,7 @@ export const assessments = pgTable(
       .references(() => guestSessions.id, { onDelete: "cascade" }),
     specialization: text("specialization").notNull(),
     answers: jsonb("answers").$type<AssessmentAnswers>().notNull(),
+    equipment: jsonb("equipment").$type<string[]>(),
     portfolio: jsonb("portfolio").$type<PortfolioEstimate | null>(),
     profile: jsonb("profile").$type<SkillScores>().notNull(),
     createdAt: createdAt(),

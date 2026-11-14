@@ -83,6 +83,33 @@ export function isSkill(v: unknown): v is Skill {
   return typeof v === "string" && (SKILLS as readonly string[]).includes(v);
 }
 
+export const EQUIPMENT = [
+  { id: "graphite", label: "Graphite pencils", group: "traditional" },
+  { id: "ink", label: "Pens, ink or brush pens", group: "traditional" },
+  { id: "colored-pencils", label: "Colored pencils", group: "traditional" },
+  { id: "markers", label: "Markers", group: "traditional" },
+  { id: "charcoal-pastel", label: "Charcoal or pastels", group: "traditional" },
+  { id: "watercolor", label: "Watercolor", group: "paint" },
+  { id: "gouache-acrylic", label: "Gouache or acrylic", group: "paint" },
+  { id: "oil", label: "Oil paints", group: "paint" },
+  { id: "graphic-tablet", label: "Graphic tablet (e.g. Wacom, XP-Pen)", group: "digital" },
+  { id: "stylus-tablet", label: "Tablet with a stylus (e.g. iPad + Apple Pencil)", group: "digital" },
+] as const;
+
+export type EquipmentId = (typeof EQUIPMENT)[number]["id"];
+export const EQUIPMENT_IDS = EQUIPMENT.map((e) => e.id) as [EquipmentId, ...EquipmentId[]];
+
+/** Pen-tablet users get an in-app pen warm-up before each lesson. */
+export function usesPenTablet(equipment: readonly string[] | null | undefined): boolean {
+  return !!equipment?.some((e) => e === "graphic-tablet" || e === "stylus-tablet");
+}
+
+export function equipmentLabels(equipment: readonly string[] | null | undefined): string[] {
+  return (equipment ?? [])
+    .map((id): string | undefined => EQUIPMENT.find((e) => e.id === id)?.label)
+    .filter((l): l is string => !!l);
+}
+
 export type LevelBand = "beginner" | "intermediate";
 
 /** Level band for a subtopic's skill, given a profile. Used as part of the shared content cache key. */

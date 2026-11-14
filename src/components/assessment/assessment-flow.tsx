@@ -14,6 +14,8 @@ import {
 } from "@/lib/assessment/items";
 import { SPECIALIZATIONS, SPECIALIZATION_INFO, SKILLS, SKILL_LABELS, type SkillScores, type Specialization } from "@/lib/skills";
 import { prepareImage } from "@/lib/client/resize";
+import type { EquipmentId } from "@/lib/skills";
+import { EquipmentPicker } from "../equipment-picker";
 import { PerceptionFigure } from "./figures";
 import { InkLoader } from "../ink-loader";
 import { SkillBars } from "../skill-bars";
@@ -21,6 +23,7 @@ import { SkillBars } from "../skill-bars";
 type Step =
   | { kind: "specialization" }
   | { kind: "experience" }
+  | { kind: "equipment" }
   | { kind: "portfolio" }
   | { kind: "ab"; item: PerceptionItem }
   | { kind: "mcq"; item: McqItem };
@@ -39,6 +42,7 @@ const DISPLAY_ORDER: Record<string, [string, string]> = {
 const STEPS: Step[] = [
   { kind: "specialization" },
   { kind: "experience" },
+  { kind: "equipment" },
   { kind: "portfolio" },
   ...PERCEPTION_ITEMS.map((item) => ({ kind: "ab" as const, item })),
   ...MCQ_ITEMS.map((item) => ({ kind: "mcq" as const, item })),
@@ -65,6 +69,7 @@ export function AssessmentFlow({
   const [skipTest, setSkipTest] = useState(defaultMode);
   const [index, setIndex] = useState(0);
   const [spec, setSpec] = useState<Specialization | null>(null);
+  const [equipment, setEquipment] = useState<EquipmentId[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [portfolio, setPortfolio] = useState<PortfolioState>({ status: "idle" });
   const [phase, setPhase] = useState<Phase>("questions");
@@ -101,7 +106,7 @@ export function AssessmentFlow({
         const res = await fetch("/api/assessment", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ specialization: spec, answers: finalAnswers, portfolioId }),
+          body: JSON.stringify({ specialization: spec, answers: finalAnswers, equipment, portfolioId }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error?.message ?? "Couldn't save your answers.");
@@ -113,7 +118,7 @@ export function AssessmentFlow({
         setPhase("questions");
       }
     },
-    [portfolio, spec],
+    [portfolio, spec, equipment],
   );
 
   const next = useCallback(
@@ -333,6 +338,22 @@ export function AssessmentFlow({
             value={answers.experience}
             onPick={(v) => answer("experience", v)}
           />
+        )}
+        {step.kind === "equipment" && (
+          <>
+            <StepHeading
+              headingRef={headingRef}
+              eyebrow="Your tools"
+              title="What do you draw or paint with?"
+              sub="Pick everything you have. Drawing on a tablet? Each lesson will open with a two-minute pen warm-up."
+            />
+            <EquipmentPicker value={equipment} onChange={setEquipment} />
+            <div className="mt-8">
+              <button className="btn btn-primary" onClick={() => next()}>
+                {equipment.length ? "Continue" : "Just paper and pencil — continue"}
+              </button>
+            </div>
+          </>
         )}
         {step.kind === "portfolio" && (
           <PortfolioStep headingRef={headingRef} onAnalyze={startPortfolio} onSkip={() => next()} />

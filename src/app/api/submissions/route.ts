@@ -14,6 +14,7 @@ import { critiqueDrawing, overallScore } from "@/lib/critique";
 import { applyCritiqueToProfile, markPracticed } from "@/lib/progress";
 import { aiConfigured } from "@/lib/ai/client";
 import { handleRouteError, jsonError } from "@/lib/http";
+import { equipmentLabels } from "@/lib/skills";
 
 export const maxDuration = 180;
 
@@ -65,7 +66,15 @@ export async function POST(request: Request) {
       .returning({ id: submissions.id });
     submissionId = row.id;
 
-    const critique = await critiqueDrawing({ db, sessionId: session.id, kind: "critique", image, task, band });
+    const critique = await critiqueDrawing({
+      db,
+      sessionId: session.id,
+      kind: "critique",
+      image,
+      task,
+      band,
+      equipment: equipmentLabels(session.equipment),
+    });
     const score = overallScore(critique);
     await db
       .update(submissions)

@@ -7,7 +7,8 @@ import { skillSnapshots } from "@/lib/db/schema";
 import { getProgressSets, recentSubmissions } from "@/lib/progress";
 import { currentWeek } from "@/lib/plan";
 import { critiquesLeft } from "@/lib/access";
-import { isSpecialization } from "@/lib/skills";
+import { EQUIPMENT_IDS, isSpecialization, type EquipmentId } from "@/lib/skills";
+import { EquipmentSettings } from "@/components/progress/equipment-settings";
 import { SkillHistory } from "@/components/progress/skill-history";
 import { PlanSettings } from "@/components/progress/plan-settings";
 
@@ -125,6 +126,18 @@ export default async function ProgressPage() {
         </h2>
         <div className="mt-5">
           <PlanSettings current={isSpecialization(plan.specialization) ? plan.specialization : "nature"} isPaid={session.isPaid} />
+        </div>
+      </section>
+
+      <section id="equipment" className="mt-14 scroll-mt-8" aria-labelledby="equipment-h">
+        <h2 id="equipment-h" className="text-2xl sm:text-3xl">
+          Your tools
+        </h2>
+        <p className="mt-2 text-ink-soft">The coach takes these into account when it reviews your work.</p>
+        <div className="mt-5">
+          <EquipmentSettings
+            initial={(session.equipment ?? []).filter((e): e is EquipmentId => EQUIPMENT_IDS.includes(e as EquipmentId)) as EquipmentId[]}
+          />
         </div>
       </section>
     </div>

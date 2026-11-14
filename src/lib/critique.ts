@@ -33,6 +33,7 @@ export async function critiqueDrawing(opts: {
   task: StoredTask;
   band: LevelBand;
   skipBudget?: boolean;
+  equipment?: string[];
 }): Promise<CritiqueOutput> {
   return generateStructured({
     db: opts.db,
@@ -42,7 +43,7 @@ export async function critiqueDrawing(opts: {
     system: critiquePrompt.system,
     content: [
       imageBlock(opts.image.buf, opts.image.type),
-      { type: "text", text: critiquePrompt.user(opts.task, opts.band, { isSample: opts.kind === "sample_critique" }) },
+      { type: "text", text: critiquePrompt.user(opts.task, opts.band, { isSample: opts.kind === "sample_critique", equipment: opts.equipment }) },
     ],
     schema: CritiqueSchema,
     validate: (c) => validateCritique(c, opts.task),

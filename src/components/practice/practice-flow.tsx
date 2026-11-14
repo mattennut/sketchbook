@@ -294,7 +294,8 @@ function SubmitView({
         Show the coach your page
       </h1>
       <p className="mt-4 max-w-xl text-lg text-ink-soft">
-        Lay the paper flat in soft daylight and fill the frame. A slightly skewed phone photo is fine.
+        Lay the paper flat in soft daylight and fill the frame. A slightly skewed phone photo is fine. Drew it on a
+        tablet? Upload an export or a screenshot.
       </p>
 
       {error || localError ? (

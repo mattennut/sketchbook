@@ -6,11 +6,12 @@ import { assessments, guestSessions, portfolioEstimates, skillSnapshots } from "
 import { requireSession } from "@/lib/session";
 import { AnswersSchema, computeProfile } from "@/lib/assessment/scoring";
 import { handleRouteError, jsonError } from "@/lib/http";
-import { SPECIALIZATIONS } from "@/lib/skills";
+import { EQUIPMENT_IDS, SPECIALIZATIONS } from "@/lib/skills";
 
 const Body = z.object({
   specialization: z.enum(SPECIALIZATIONS),
   answers: AnswersSchema,
+  equipment: z.array(z.enum(EQUIPMENT_IDS)).max(EQUIPMENT_IDS.length).optional(),
   portfolioId: z.uuid().nullable().optional(),
 });
 
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
     const parsed = Body.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return jsonError(400, "invalid", "Some answers are missing.");
     const { specialization, answers, portfolioId } = parsed.data;
+    const equipment = parsed.data.equipment ? [...new Set(parsed.data.equipment)] : null;
 
     const db = await getDb();
     let portfolio = null;
@@ -33,9 +35,12 @@ export async function POST(request: Request) {
     }
 
     const profile = computeProfile(answers, portfolio);
-    await db.insert(assessments).values({ sessionId: session.id, specialization, answers, portfolio, profile });
+    await db.insert(assessments).values({ sessionId: session.id, specialization, answers, equipment, portfolio, profile });
     await db.insert(skillSnapshots).values({ sessionId: session.id, source: "assessment", scores: profile });
-    await db.update(guestSessions).set({ specialization }).where(eq(guestSessions.id, session.id));
+    await db
+      .update(guestSessions)
+      .set({ specialization, ...(equipment ? { equipment } : {}) })
+      .where(eq(guestSessions.id, session.id));
 
     return NextResponse.json({ profile, portfolioSummary: portfolio?.summary ?? null });
   } catch (err) {

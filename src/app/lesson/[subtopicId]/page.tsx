@@ -5,7 +5,8 @@ import { ArrowLeft } from "lucide-react";
 import { loadGuestContext } from "@/lib/guest";
 import { canOpenSubtopic } from "@/lib/access";
 import { weekOf } from "@/lib/plan";
-import { SKILL_LABELS } from "@/lib/skills";
+import { SKILL_LABELS, usesPenTablet } from "@/lib/skills";
+import { WarmupGate } from "@/components/warmup/warmup-gate";
 import { DeckLoader } from "@/components/deck/deck-loader";
 import { Paywall } from "@/components/states";
 
@@ -46,7 +47,13 @@ export default async function LessonPage({ params }: Props) {
           Week {week} · {SKILL_LABELS[entry.skill]}
         </p>
       </div>
-      <DeckLoader subtopicId={subtopicId} title={entry.title} />
+      {usesPenTablet(session.equipment) ? (
+        <WarmupGate subtopicId={subtopicId}>
+          <DeckLoader subtopicId={subtopicId} title={entry.title} />
+        </WarmupGate>
+      ) : (
+        <DeckLoader subtopicId={subtopicId} title={entry.title} />
+      )}
     </div>
   );
 }
