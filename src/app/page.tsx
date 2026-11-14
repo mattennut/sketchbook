@@ -9,7 +9,7 @@ const STEPS = [
   },
   {
     title: "Get a 12-week plan in your direction",
-    body: "Landscapes, portraits, urban scenes, ink, watercolor or manga. Chosen and ordered from a 65-lesson curriculum around your weakest skills.",
+    body: "Landscapes, portraits, urban scenes, ink, watercolor or manga. Chosen and ordered from a 67-lesson curriculum around your weakest skills.",
   },
   {
     title: "Draw on paper. Snap a photo. Get one clear fix.",

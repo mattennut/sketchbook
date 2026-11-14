@@ -27,7 +27,7 @@ specific feedback on every page — for $12/month.
 1. Open the site → **Start free assessment** (no account; an anonymous guest session is created).
 2. Pick a specialization, answer 7 "which looks correct?" perception tests (drawn in SVG in your browser)
    and 3 theory questions. Optional: upload up to 3 past drawings for an AI level estimate.
-3. **Build my 12-week plan** — The AI (OpenAI) selects and orders lessons from a fixed 65-subtopic catalog.
+3. **Build my 12-week plan** — The AI (OpenAI) selects and orders lessons from a fixed 67-subtopic catalog.
 4. Open a week-1 lesson (a swipeable mini-deck; ← → keys on desktop), then **Start practice**.
 5. On the submit step use **Try with a sample drawing** to see a full critique without drawing anything,
    or photograph your own page (mobile opens the camera).

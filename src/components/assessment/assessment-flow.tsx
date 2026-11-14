@@ -184,7 +184,7 @@ export function AssessmentFlow({ hasPlan, isPaid }: { hasPlan: boolean; isPaid: 
         className="py-24"
         messages={[
           "Reading your profile…",
-          "Choosing from 65 lessons in the catalog…",
+          "Choosing from 67 lessons in the catalog…",
           "Ordering twelve weeks so each builds on the last…",
           "Writing a note for each week…",
         ]}
