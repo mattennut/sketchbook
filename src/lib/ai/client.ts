@@ -180,6 +180,7 @@ export async function generateStructured<S extends z.ZodType>(opts: {
       }
 
       lastProblems = problems;
+      console.info(`[ai:${opts.kind}] attempt ${attempt + 1} rejected: ${problems.slice(0, 3).join(" | ")}`);
       messages.push(
         { role: "assistant", content: text },
         {

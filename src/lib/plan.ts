@@ -34,7 +34,7 @@ export async function getLatestProfile(db: DB, sessionId: string): Promise<Skill
 }
 
 /** Checks a model-proposed plan against the catalog. Returns human-readable problems (empty = valid). */
-export function validatePlan(plan: PlanOutput, eligible: CatalogEntry[]): string[] {
+export function validatePlan(plan: PlanOutput, eligible: CatalogEntry[], profile?: SkillScores): string[] {
   const problems: string[] = [];
   const byId = catalogById(eligible);
   const seen = new Map<string, number>();
@@ -66,6 +66,19 @@ export function validatePlan(plan: PlanOutput, eligible: CatalogEntry[]): string
     }
   }
   if (sorted[0] && sorted[0].subtopicIds.length !== 3) problems.push("Week 1 must have exactly 3 subtopics.");
+
+  // Week 1 must start where the learner is weakest (when starters for those skills exist).
+  if (profile && sorted[0]) {
+    const weakest = [...SKILLS].sort((a, b) => profile[a] - profile[b]).slice(0, 2);
+    const available = eligible.filter((e) => isStarter(e) && weakest.includes(e.skill)).length;
+    const hits = sorted[0].subtopicIds.filter((id) => weakest.includes(byId.get(id)?.skill as Skill)).length;
+    const needed = Math.min(2, available);
+    if (hits < needed) {
+      problems.push(
+        `Week 1 must include at least ${needed} starter subtopics training the weakest skills (${weakest.join(", ")}); it has ${hits}.`,
+      );
+    }
+  }
   return problems.slice(0, 12);
 }
 
@@ -159,7 +172,7 @@ export async function buildPlan(opts: {
         starterIds: eligible.filter(isStarter).map((e) => e.id),
       }),
       schema: PlanSchema,
-      validate: (p) => validatePlan(p, eligible),
+      validate: (p) => validatePlan(p, eligible, profile),
       effort: "medium",
     });
   } catch (err) {

@@ -53,7 +53,9 @@ export async function POST(request: Request) {
     const task = (await getReadyTaskSet(db, subtopicId, band))?.tasks.find((t) => t.id === taskId);
     if (!task) return jsonError(409, "task_missing", "That practice task isn't ready yet. Reload and try again.");
 
-    const key = { kind: "sample_critique" as const, subtopicId, band, variant: `${sampleId}:${taskId}` };
+    // Bump SAMPLE_PROMPT_VERSION when the sample critique prompt changes, so cached results refresh.
+    const SAMPLE_PROMPT_VERSION = "v2";
+    const key = { kind: "sample_critique" as const, subtopicId, band, variant: `${sampleId}:${taskId}:${SAMPLE_PROMPT_VERSION}` };
     let critique: CritiqueOutput | null = null;
 
     for (let waited = 0; waited < 120_000 && !critique; ) {

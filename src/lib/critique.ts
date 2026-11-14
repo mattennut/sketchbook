@@ -42,7 +42,7 @@ export async function critiqueDrawing(opts: {
     system: critiquePrompt.system,
     content: [
       imageBlock(opts.image.buf, opts.image.type),
-      { type: "text", text: critiquePrompt.user(opts.task, opts.band) },
+      { type: "text", text: critiquePrompt.user(opts.task, opts.band, { isSample: opts.kind === "sample_critique" }) },
     ],
     schema: CritiqueSchema,
     validate: (c) => validateCritique(c, opts.task),
