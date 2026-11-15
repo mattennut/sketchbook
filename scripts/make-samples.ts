@@ -232,6 +232,69 @@ function stillLife() {
   return s.svg();
 }
 
+function landscape() {
+  const s = new Sketch(77);
+  // horizon / lake edge
+  s.line([80, 600], [1320, 590], { weight: 1.4, alpha: 0.45 });
+  // far hills — hatched as dark as the foreground (the deliberate mistake: no atmospheric perspective)
+  const far = "M80 600 C 200 470, 330 440, 450 500 C 560 420, 690 430, 800 520 C 860 490, 900 500, 960 560 L 960 600 Z";
+  s.hatch(far, 65, 6, { alpha: 0.62, cross: true, weight: 1.5 });
+  s.parts.push(`<path d="${far}" fill="none" stroke="#2f2d2a" stroke-opacity="0.7" stroke-width="2.4"/>`);
+  // middle hill
+  // lake shimmer + a winding path leading in
+  for (let i = 0; i < 6; i++) s.line([200 + i * 130, 630 + i * 6], [260 + i * 130, 630 + i * 6], { weight: 1.2, alpha: 0.35, passes: 1 });
+  s.parts.push(
+    `<path d="M430 1050 C 520 900, 700 860, 640 760 C 610 715, 660 690, 700 680" fill="none" stroke="#2f2d2a" stroke-opacity="0.6" stroke-width="2.2" stroke-linecap="round"/>`,
+    `<path d="M700 1050 C 760 920, 820 860, 730 770 C 700 735, 720 700, 730 682" fill="none" stroke="#2f2d2a" stroke-opacity="0.6" stroke-width="2.2" stroke-linecap="round"/>`,
+  );
+  // foreground tree
+  s.line([1050, 960], [1062, 620], { weight: 3 });
+  s.line([1090, 960], [1078, 620], { weight: 3 });
+  s.line([1066, 700], [990, 610], { weight: 2.2 });
+  s.line([1074, 680], [1150, 600], { weight: 2.2 });
+  const canopy = "M940 640 C 900 520, 980 400, 1070 410 C 1160 380, 1250 470, 1220 560 C 1260 640, 1150 700, 1070 670 C 1000 700, 930 690, 940 640 Z";
+  s.hatch(canopy, 120, 9, { alpha: 0.4 });
+  s.hatch("M1080 560 C 1150 560, 1230 590, 1215 620 C 1170 680, 1100 690, 1070 670 Z", 30, 7, { alpha: 0.45 });
+  s.parts.push(`<path d="${canopy}" fill="none" stroke="#2f2d2a" stroke-opacity="0.65" stroke-width="2.4"/>`);
+  // grass marks
+  for (let i = 0; i < 24; i++) {
+    const x = 120 + i * 50 + s.j(12);
+    const y = 880 + s.j(60);
+    s.line([x, y], [x + 6, y - 22], { weight: 1.3, alpha: 0.5, passes: 1, overshoot: 0 });
+  }
+  return s.svg();
+}
+
+/** Map a point on the 1400×1050 sketch to the final rotated + cropped 1500×1125 photo. */
+function toPhoto([x, y]: Pt): Pt {
+  const a = (1.4 * Math.PI) / 180; // sharp.rotate(-1.4) = 1.4° counter-clockwise
+  const dx = x - W / 2;
+  const dy = y - H / 2;
+  const rx = dx * Math.cos(a) + dy * Math.sin(a);
+  const ry = -dx * Math.sin(a) + dy * Math.cos(a);
+  const rw = W * Math.cos(a) + H * Math.sin(a);
+  const rh = H * Math.cos(a) + W * Math.sin(a);
+  const scale = Math.max(1500 / rw, 1125 / rh);
+  const px = (rx + rw / 2) * scale - (rw * scale - 1500) / 2;
+  const py = (ry + rh / 2) * scale - (rh * scale - 1125) / 2;
+  return [Math.round(px), Math.round(py)];
+}
+
+/** Where each sample's deliberate mistake is, in final-photo pixels (for the landing-page annotation). */
+function annotations() {
+  const k = 1500 / 1400;
+  const mark = (c: Pt, rx: number, ry: number, rot = 0) => {
+    const [cx, cy] = toPhoto(c);
+    return { cx, cy, rx: Math.round(rx * k), ry: Math.round(ry * k), rot: Math.round(rot - 1.4) };
+  };
+  return {
+    stilllife: mark([930, 680], 118, 34),
+    boxes: mark([1155, 636], 125, 36, -9),
+    portrait: mark([700, 464], 150, 42),
+    landscape: mark([520, 518], 455, 92),
+  };
+}
+
 async function render(svg: string, file: string) {
   const out = path.join(process.cwd(), "public", "samples", file);
   const paper = await sharp(Buffer.from(svg)).png().toBuffer();
@@ -249,6 +312,8 @@ async function main() {
   await render(boxes(), "sample-boxes.jpg");
   await render(portrait(), "sample-portrait.jpg");
   await render(stillLife(), "sample-stilllife.jpg");
+  await render(landscape(), "sample-landscape.jpg");
+  console.log(JSON.stringify(annotations()));
 }
 
 main().catch((e) => {

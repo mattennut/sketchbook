@@ -8,7 +8,8 @@ import { weekOf } from "@/lib/plan";
 import { SKILL_LABELS, usesPenTablet } from "@/lib/skills";
 import { WarmupGate } from "@/components/warmup/warmup-gate";
 import { DeckLoader } from "@/components/deck/deck-loader";
-import { Paywall } from "@/components/states";
+import { Paywall, ToolsLock } from "@/components/states";
+import { TOOL_NEED_DETAIL, TOOL_NEED_LABEL, hasToolsFor, toolNeedFor } from "@/lib/equipment-rules";
 
 type Props = { params: Promise<{ subtopicId: string }> };
 
@@ -34,6 +35,11 @@ export default async function LessonPage({ params }: Props) {
         from={subtopicId}
       />
     );
+  }
+
+  if (!hasToolsFor(session.equipment, subtopicId)) {
+    const need = toolNeedFor(subtopicId)!;
+    return <ToolsLock title={`“${entry.title}” needs ${TOOL_NEED_LABEL[need]}`} need={TOOL_NEED_LABEL[need]} detail={TOOL_NEED_DETAIL[need]} />;
   }
 
   const week = weekOf(plan, subtopicId);

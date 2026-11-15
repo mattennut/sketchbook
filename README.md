@@ -46,6 +46,7 @@ Landing → Assessment → Skill profile → 12-week plan → Lesson deck → Pr
 | **Guest sessions** | `src/proxy.ts` sets a random UUID in an httpOnly cookie on first visit. All data lives server-side keyed by it. No PII. |
 | **Perception tests** | Generated programmatically (`components/assessment/figures.tsx`): boxes with consistent vs. broken vanishing points, ellipses in a glass, face proportions, sphere lighting, color value, color temperature, focal point. Answer key is server-side. |
 | **Equipment & pen warm-up** | The assessment asks what you draw with (pencils, ink, paint, graphic tablet, iPad + stylus…). Critiques take it into account. Tablet users get an original 2-minute pen warm-up before each lesson (confident lines, ellipses, hatching) scored by geometry with no AI cost (`lib/warmup/geometry.ts`); the lesson loads in the background meanwhile. |
+| **Tool-aware lessons** | Lessons that need a medium (color, watercolor technique, brushwork) are left out of new plans when the learner doesn't have it, and show as locked with what's needed in existing plans (`lib/equipment-rules.ts`). The default course asks for tools too. |
 | **Skill profile** | Six skills on 1–5 (`perspective, proportion, value, color, linework, composition`), blending self-reported experience, test results and (optionally) a vision-model portfolio estimate. |
 | **Curriculum catalog** | Fixed and seeded (`lib/catalog/data.ts` → `subtopics` table): stable ids, skill trained, difficulty, prerequisites, tracks. The AI **never invents subtopics** — it selects and orders. Output is validated against the catalog (unknown ids, duplicates, prerequisite order, week-1 starter rule) and retried once with the exact problems; if it still fails, a deterministic planner takes over so the user always gets a plan. |
 | **Mini-decks** | 5–8 typed slides (`title, concept, steps, do_dont, diagram, exercise_preview`) rendered as React components. The model-drawn diagram SVG is sanitized with a strict allowlist before it is cached. |
@@ -167,3 +168,8 @@ Failed or non-drawing critiques don't consume a free critique.
 - Optional "save your progress with email" (magic link) to move a guest session across devices.
 - Side-by-side "then vs. now" comparisons of the same exercise.
 - Weekly reminder emails and streaks tuned for a calm, non-gamified tone.
+
+## Credits
+
+- Landing-page background: Thomas Gainsborough, *Cornard Wood, near Sudbury, Suffolk* (1748), National Gallery, London — public domain (via Wikimedia Commons). Web versions made with `npm run painting`.
+- Fonts: Fraunces (headings) and Source Sans 3 (body), via Google Fonts / `next/font`.

@@ -6,7 +6,8 @@ import { loadGuestContext } from "@/lib/guest";
 import { canOpenSubtopic, critiquesLeft } from "@/lib/access";
 import { weekOf } from "@/lib/plan";
 import { PracticeFlow } from "@/components/practice/practice-flow";
-import { Paywall } from "@/components/states";
+import { Paywall, ToolsLock } from "@/components/states";
+import { TOOL_NEED_DETAIL, TOOL_NEED_LABEL, hasToolsFor, toolNeedFor } from "@/lib/equipment-rules";
 
 type Props = {
   params: Promise<{ subtopicId: string }>;
@@ -35,6 +36,11 @@ export default async function PracticePage({ params, searchParams }: Props) {
         from={subtopicId}
       />
     );
+  }
+
+  if (!hasToolsFor(session.equipment, subtopicId)) {
+    const need = toolNeedFor(subtopicId)!;
+    return <ToolsLock title={`“${entry.title}” needs ${TOOL_NEED_LABEL[need]}`} need={TOOL_NEED_LABEL[need]} detail={TOOL_NEED_DETAIL[need]} />;
   }
 
   return (

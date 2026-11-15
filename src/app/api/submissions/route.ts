@@ -15,6 +15,7 @@ import { applyCritiqueToProfile, markPracticed } from "@/lib/progress";
 import { aiConfigured } from "@/lib/ai/client";
 import { handleRouteError, jsonError } from "@/lib/http";
 import { equipmentLabels } from "@/lib/skills";
+import { hasToolsFor } from "@/lib/equipment-rules";
 
 export const maxDuration = 180;
 
@@ -35,6 +36,9 @@ export async function POST(request: Request) {
     if (!entry) return jsonError(404, "not_found", "Unknown lesson.");
     if (!canOpenSubtopic(session, plan, subtopicId)) {
       return jsonError(402, "paywall", "This lesson is part of Sketchbook Plus.");
+    }
+    if (!hasToolsFor(session.equipment, subtopicId)) {
+      return jsonError(403, "needs_tools", "This lesson needs tools you haven't added yet.");
     }
     if (!aiConfigured()) return jsonError(503, "not_configured", "The AI coach isn't configured on this deployment yet.");
     if (!storageConfigured()) return jsonError(503, "storage", "Image storage isn't configured on this deployment yet.");

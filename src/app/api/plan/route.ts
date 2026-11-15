@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     if (specialization !== session.specialization) {
       await db.update(guestSessions).set({ specialization }).where(eq(guestSessions.id, session.id));
     }
-    const plan = await buildPlan({ db, sessionId: session.id, profile, specialization });
+    const plan = await buildPlan({ db, sessionId: session.id, profile, specialization, equipment: session.equipment });
     return NextResponse.json({ planId: plan.id, source: plan.source });
   } catch (err) {
     return handleRouteError(err, "plan");

@@ -16,6 +16,7 @@ import { AiError, aiConfigured } from "@/lib/ai/client";
 import { checkAiBudget } from "@/lib/ai/budget";
 import type { CritiqueOutput } from "@/lib/ai/prompts";
 import { handleRouteError, jsonError } from "@/lib/http";
+import { hasToolsFor } from "@/lib/equipment-rules";
 
 export const maxDuration = 180;
 
@@ -48,6 +49,9 @@ export async function POST(request: Request) {
     if (!entry) return jsonError(404, "not_found", "Unknown lesson.");
     if (!canOpenSubtopic(session, plan, subtopicId)) {
       return jsonError(402, "paywall", "This lesson is part of Sketchbook Plus.");
+    }
+    if (!hasToolsFor(session.equipment, subtopicId)) {
+      return jsonError(403, "needs_tools", "This lesson needs tools you haven't added yet.");
     }
     const band = bandForPlan(plan, entry.skill);
     const task = (await getReadyTaskSet(db, subtopicId, band))?.tasks.find((t) => t.id === taskId);

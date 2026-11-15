@@ -17,7 +17,8 @@
     "db:seed": "node --env-file-if-exists=.env.local --import tsx scripts/seed-catalog.ts",
     "seed:content": "node --env-file-if-exists=.env.local --import tsx scripts/seed-content.ts",
     "seed:default": "node --env-file-if-exists=.env.local --import tsx scripts/seed-content.ts --default",
-    "samples": "node --import tsx scripts/make-samples.ts"
+    "samples": "node --import tsx scripts/make-samples.ts",
+    "painting": "node --import tsx scripts/prepare-painting.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",

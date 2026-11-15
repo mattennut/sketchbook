@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PRICE_LABEL, FREE_CRITIQUES } from "@/lib/access";
+import { HeroSamples } from "@/components/hero-samples";
 
 const STEPS = [
   {
@@ -19,60 +20,53 @@ const STEPS = [
 
 export default function Home() {
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-8">
-      <section className="grid items-center gap-12 pt-8 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
-        <div className="animate-fade-up">
-          <h1 className="text-5xl leading-[1.03] sm:text-7xl">
-            Learn to draw, one honest page at a time.
-          </h1>
-          <p className="mt-6 max-w-xl text-xl leading-relaxed text-ink-soft">
-            A drawing coach for grown-ups with day jobs: a plan built around your eye, ten-minute lessons, and feedback on
-            photos of your real sketchbook pages.
-          </p>
-          <div className="mt-10 flex flex-col items-start gap-3">
-            <Link href="/assessment" className="btn btn-primary px-7 text-lg">
-              Start free assessment <ArrowRight size={18} aria-hidden="true" />
-            </Link>
-            <span className="text-sm text-ink-muted">About 5 minutes · no sign-up · nothing to install</span>
-            <Link href="/assessment?mode=default" className="link mt-2 text-[0.95rem] font-medium text-ink-soft">
-              Or skip the test and start the default course
-            </Link>
-          </div>
+    <>
+      {/* Hero over Gainsborough's "Cornard Wood" (1748, public domain), washed with paper tone for legibility. */}
+      <section className="relative isolate -mt-[5.5rem] overflow-hidden pt-[5.5rem]">
+        <div aria-hidden="true" className="absolute inset-0 -z-10">
+          <picture>
+            <source media="(max-width: 767px)" srcSet="/landing/cornard-wood-1200.webp" />
+            <img
+              src="/landing/cornard-wood-2400.webp"
+              alt=""
+              className="h-full w-full object-cover object-[50%_35%]"
+              fetchPriority="high"
+            />
+          </picture>
+          <div className="hero-wash absolute inset-0" />
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-paper" />
         </div>
 
-        <figure className="mx-auto w-full max-w-xl">
-          <div className="relative rotate-[0.6deg]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/samples/sample-stilllife.jpg"
-              alt="A learner's pencil still life of a sphere and a cup, photographed on a table."
-              className="block w-full rounded-xl shadow-[0_30px_60px_-30px_rgba(28,27,25,0.45)]"
-            />
-            {/* hand-drawn annotation around the cup's base */}
-            <svg viewBox="0 0 1500 1125" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
-              <ellipse
-                cx="995"
-                cy="732"
-                rx="160"
-                ry="52"
-                fill="none"
-                stroke="var(--color-accent)"
-                strokeWidth="7"
-                strokeLinecap="round"
-                transform="rotate(-3 995 732)"
-                style={{ strokeDasharray: 750, ["--len" as string]: 750, animation: "draw-line 1.4s 0.5s var(--ease-calm) both" }}
-              />
-            </svg>
-          </div>
-          <figcaption className="sheet relative -mt-10 ml-auto mr-2 max-w-[19rem] rotate-[-1deg] p-5 sm:-mt-16 sm:mr-[-1.5rem]">
-            <p className="eyebrow text-accent-deep">The one thing to work on</p>
-            <p className="mt-2 font-display text-lg leading-snug">Open up the bottom of the cup.</p>
-            <p className="mt-1.5 text-[0.95rem] leading-relaxed text-ink-soft">
-              It&apos;s further below your eye level than the rim, so its ellipse should be rounder — right now it&apos;s flatter.
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-8 sm:px-8 sm:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pb-24">
+          <div className="animate-fade-up">
+            <h1 className="text-5xl leading-[1.03] sm:text-7xl">Learn to draw, one honest page at a time.</h1>
+            <p className="mt-6 max-w-xl text-xl leading-relaxed text-ink-soft">
+              A drawing coach for grown-ups with day jobs: a plan built around your eye, ten-minute lessons, and feedback
+              on photos of your real sketchbook pages.
             </p>
-          </figcaption>
-        </figure>
+            <div className="mt-10 flex flex-wrap items-center gap-3">
+              <Link href="/assessment" className="btn btn-primary px-7 text-lg">
+                Start free assessment <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+              <Link href="/assessment?mode=default" className="btn btn-secondary bg-sheet/70 px-6 text-lg backdrop-blur-[2px]">
+                Take the default course
+              </Link>
+            </div>
+            <p className="mt-4 text-sm text-ink-soft">
+              Assessment: about 5 minutes · Default course: start in under a minute · No sign-up
+            </p>
+          </div>
+
+          <HeroSamples />
+        </div>
+
+        <p className="mx-auto max-w-6xl px-4 pb-4 text-right text-xs text-ink-muted sm:px-8">
+          Background: Thomas Gainsborough, <cite>Cornard Wood, near Sudbury, Suffolk</cite> (1748), National Gallery,
+          London. Public domain.
+        </p>
       </section>
+
+      <div className="mx-auto max-w-6xl px-4 sm:px-8">
 
       <section className="mt-28 grid gap-12 lg:grid-cols-[0.8fr_1.2fr]" aria-labelledby="how-h">
         <div>
@@ -111,6 +105,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

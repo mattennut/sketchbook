@@ -47,6 +47,7 @@ const STEPS: Step[] = [
   ...PERCEPTION_ITEMS.map((item) => ({ kind: "ab" as const, item })),
   ...MCQ_ITEMS.map((item) => ({ kind: "mcq" as const, item })),
 ];
+const EQUIPMENT_STEP = STEPS.findIndex((s) => s.kind === "equipment");
 
 type PortfolioState =
   | { status: "idle" }
@@ -188,7 +189,7 @@ export function AssessmentFlow({
       const res = await fetch("/api/plan/default", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ specialization: chosen }),
+        body: JSON.stringify({ specialization: chosen, equipment }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error?.message ?? "Couldn't start the default course.");
@@ -280,7 +281,7 @@ export function AssessmentFlow({
 
   return (
     <section className="mx-auto max-w-3xl">
-      <div className={`mb-8 flex items-center gap-4 ${skipTest && index === 0 ? "invisible" : ""}`}>
+      <div className={`mb-8 flex items-center gap-4 ${skipTest ? "invisible" : ""}`}>
         <button
           type="button"
           onClick={() => setIndex(Math.max(0, index - 1))}
@@ -325,7 +326,8 @@ export function AssessmentFlow({
             onPick={(s) => {
               setSpec(s);
               if (advanceTimer.current) clearTimeout(advanceTimer.current);
-              advanceTimer.current = setTimeout(() => (skipTest ? void startDefault(s) : setIndex(1)), 320);
+              // Default course still asks for tools (they decide which lessons are available).
+              advanceTimer.current = setTimeout(() => setIndex(skipTest ? EQUIPMENT_STEP : 1), 320);
             }}
           />
         )}
@@ -343,15 +345,21 @@ export function AssessmentFlow({
           <>
             <StepHeading
               headingRef={headingRef}
-              eyebrow="Your tools"
+              eyebrow={skipTest ? "Default course · your tools" : "Your tools"}
               title="What do you draw or paint with?"
-              sub="Pick everything you have. Drawing on a tablet? Each lesson will open with a two-minute pen warm-up."
+              sub="Pick everything you have — lessons that need tools you don't have are left out. Drawing on a tablet? Each lesson opens with a two-minute pen warm-up."
             />
             <EquipmentPicker value={equipment} onChange={setEquipment} />
             <div className="mt-8">
-              <button className="btn btn-primary" onClick={() => next()}>
-                {equipment.length ? "Continue" : "Just paper and pencil — continue"}
-              </button>
+              {skipTest && spec ? (
+                <button className="btn btn-primary" onClick={() => void startDefault(spec)}>
+                  {equipment.length ? "Start my default course" : "Just paper and pencil — start the course"}
+                </button>
+              ) : (
+                <button className="btn btn-primary" onClick={() => next()}>
+                  {equipment.length ? "Continue" : "Just paper and pencil — continue"}
+                </button>
+              )}
             </div>
           </>
         )}
@@ -394,8 +402,22 @@ export function AssessmentFlow({
               </button>
             </>
           )
+        ) : skipTest && index === EQUIPMENT_STEP ? (
+          <button type="button" className="link" onClick={() => setIndex(0)}>
+            Change what you want to draw
+          </button>
         ) : spec ? (
-          <button type="button" className="link font-medium text-ink-soft" onClick={() => void startDefault(spec)}>
+          <button
+            type="button"
+            className="link font-medium text-ink-soft"
+            onClick={() => {
+              // Tools are still needed for the default course; ask for them first if we haven't yet.
+              if (index < EQUIPMENT_STEP) {
+                setSkipTest(true);
+                setIndex(EQUIPMENT_STEP);
+              } else void startDefault(spec);
+            }}
+          >
             Skip the rest — start the default course
           </button>
         ) : null}

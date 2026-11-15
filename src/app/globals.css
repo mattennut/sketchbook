@@ -133,6 +133,28 @@
   }
 }
 
+/* Landing hero: wash the painting with paper tone so text stays legible. Strong behind
+   the text column, lighter behind the sample drawing where the painting can show. */
+.hero-wash {
+  background: linear-gradient(
+    180deg,
+    rgba(246, 242, 234, 0.9) 0%,
+    rgba(246, 242, 234, 0.86) 50%,
+    rgba(246, 242, 234, 0.72) 100%
+  );
+}
+@media (min-width: 1024px) {
+  .hero-wash {
+    background: linear-gradient(
+      90deg,
+      rgba(246, 242, 234, 0.92) 0%,
+      rgba(246, 242, 234, 0.86) 40%,
+      rgba(246, 242, 234, 0.5) 72%,
+      rgba(246, 242, 234, 0.38) 100%
+    );
+  }
+}
+
 @keyframes draw-line {
   from {
     stroke-dashoffset: var(--len, 400);

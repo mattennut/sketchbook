@@ -17,7 +17,7 @@ async function loadNavState() {
 export async function SiteHeader() {
   const { hasPlan, isPaid } = await loadNavState();
   return (
-    <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-8">
+    <header className="relative z-10 mx-auto flex h-[5.5rem] w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-8">
       <Link href="/" className="font-display text-2xl italic tracking-tight" aria-label="Sketchbook home">
         <span className="scribble">Sketchbook</span>
       </Link>

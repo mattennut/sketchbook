@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import type { DB } from "./db";
 import { plans, skillSnapshots, type Plan, type PlanWeek } from "./db/schema";
 import { catalogById, eligibleFor, isStarter, loadCatalog, type CatalogEntry } from "./catalog";
+import { hasToolsFor } from "./equipment-rules";
 import { AiError, generateStructured } from "./ai/client";
 import { planPrompt, PlanSchema, type PlanOutput } from "./ai/prompts";
 import {
@@ -106,8 +107,13 @@ export function fallbackPlan(
     return e.difficulty * 1.0 - gap * 0.45 + specific + tooHard * 1.5;
   };
 
+  // Spread what's available over all 12 weeks: week 1 has 3, later weeks get the extra
+  // (44 lessons → 3,3,3,3,4…; fewer when the learner's tools rule some lessons out).
+  const total = Math.min(eligible.length, 44);
+  const perWeek = Math.floor((total - 3) / 11);
+  const extra = (total - 3) % 11;
   for (let week = 1; week <= 12; week++) {
-    const size = week === 1 ? 3 : week <= 4 ? 3 : 4;
+    const size = week === 1 ? 3 : Math.max(1, perWeek + (week > 12 - extra ? 1 : 0));
     const picked: CatalogEntry[] = [];
     if (week === 1 && fixedWeek1) {
       for (const id of fixedWeek1) {
@@ -164,10 +170,12 @@ export async function buildPlan(opts: {
   sessionId: string;
   profile: SkillScores;
   specialization: Specialization;
+  equipment?: string[] | null;
 }): Promise<Plan> {
   const { db, sessionId, profile, specialization } = opts;
   const catalog = await loadCatalog(db);
-  const eligible = eligibleFor(catalog, specialization);
+  // Only lessons the learner has the tools for (see lib/equipment-rules.ts).
+  const eligible = eligibleFor(catalog, specialization).filter((e) => hasToolsFor(opts.equipment, e.id));
   const info = SPECIALIZATION_INFO[specialization];
 
   let output: PlanOutput;
@@ -231,9 +239,10 @@ export async function buildDefaultPlan(opts: {
   db: DB;
   sessionId: string;
   specialization: Specialization;
+  equipment?: string[] | null;
 }): Promise<Plan> {
   const { db, sessionId, specialization } = opts;
-  const eligible = eligibleFor(await loadCatalog(db), specialization);
+  const eligible = eligibleFor(await loadCatalog(db), specialization).filter((e) => hasToolsFor(opts.equipment, e.id));
   const output = fallbackPlan(DEFAULT_PROFILE, specialization, eligible, DEFAULT_WEEK1);
   const byId = catalogById(eligible);
   const specLabel = SPECIALIZATION_INFO[specialization].label.toLowerCase();

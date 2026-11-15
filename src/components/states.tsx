@@ -30,6 +30,29 @@ export function ErrorState({
   );
 }
 
+/** Shown when a lesson needs a tool the learner hasn't listed. */
+export function ToolsLock({ title, need, detail }: { title: string; need: string; detail: string }) {
+  return (
+    <section className="mx-auto max-w-xl px-4 py-16 text-center sm:px-8">
+      <div className="mx-auto mb-6 inline-flex h-12 w-12 items-center justify-center rounded-full border border-rule-strong">
+        <Lock size={20} aria-hidden="true" />
+      </div>
+      <h1 className="text-3xl leading-tight sm:text-4xl">{title}</h1>
+      <p className="mt-4 text-lg text-ink-soft">
+        This lesson needs {need}, and it isn&apos;t in your tools yet. Any of these works: {detail}.
+      </p>
+      <div className="mt-10 flex flex-col items-center gap-3">
+        <Link href="/progress#equipment" className="btn btn-primary">
+          Update my tools
+        </Link>
+        <Link href="/plan" className="link text-sm text-ink-soft">
+          Back to my plan
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 /** Shown in place of locked content: what Plus unlocks, one primary action. */
 export function Paywall({ title, reason, from }: { title: string; reason: string; from?: string }) {
   return (

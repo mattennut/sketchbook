@@ -8,6 +8,7 @@ import { ensureLessonContent } from "@/lib/content";
 import { bandForPlan } from "@/lib/guest";
 import { AI_ERROR_COPY, type AiErrorCode } from "@/lib/ai/client";
 import { handleRouteError, jsonError } from "@/lib/http";
+import { hasToolsFor } from "@/lib/equipment-rules";
 
 export const maxDuration = 300; // generation continues in after() up to this limit
 
@@ -26,6 +27,9 @@ async function handle(ctx: Ctx, retry: boolean) {
     if (!entry) return jsonError(404, "not_found", "That lesson doesn't exist.");
     if (!canOpenSubtopic(session, plan, subtopicId)) {
       return jsonError(402, "paywall", "This lesson is part of Sketchbook Plus.");
+    }
+    if (!hasToolsFor(session.equipment, subtopicId)) {
+      return jsonError(403, "needs_tools", "This lesson needs tools you haven't added yet.");
     }
 
     const state = await ensureLessonContent({

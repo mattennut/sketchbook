@@ -7,6 +7,7 @@ import { getProgressSets } from "@/lib/progress";
 import { currentWeek } from "@/lib/plan";
 import { canOpenSubtopic } from "@/lib/access";
 import { SKILL_LABELS, SPECIALIZATION_INFO, isSpecialization } from "@/lib/skills";
+import { TOOL_NEED_LABEL, hasToolsFor, toolNeedFor } from "@/lib/equipment-rules";
 
 export const metadata: Metadata = { title: "Your 12-week plan" };
 
@@ -17,8 +18,9 @@ export default async function PlanPage() {
   const { lessonDone, practiced } = await getProgressSets(db, session.id);
   const now = currentWeek(plan, practiced);
   const nextId =
-    plan.weeks.flatMap((w) => w.subtopicIds).find((id) => !practiced.has(id) && canOpenSubtopic(session, plan, id)) ??
-    null;
+    plan.weeks
+      .flatMap((w) => w.subtopicIds)
+      .find((id) => !practiced.has(id) && canOpenSubtopic(session, plan, id) && hasToolsFor(session.equipment, id)) ?? null;
   const nextEntry = nextId ? byId.get(nextId) : null;
   const total = plan.weeks.reduce((n, w) => n + w.subtopicIds.length, 0);
   const done = plan.weeks.flatMap((w) => w.subtopicIds).filter((id) => practiced.has(id)).length;
@@ -95,14 +97,21 @@ export default async function PlanPage() {
                       if (!e) return null;
                       const isPracticed = practiced.has(id);
                       const isRead = lessonDone.has(id);
-                      const href = locked ? `/upgrade?from=${id}` : isRead && !isPracticed ? `/practice/${id}` : `/lesson/${id}`;
+                      const need = hasToolsFor(session.equipment, id) ? null : toolNeedFor(id);
+                      const href = locked
+                        ? `/upgrade?from=${id}`
+                        : need
+                          ? "/progress#equipment"
+                          : isRead && !isPracticed
+                            ? `/practice/${id}`
+                            : `/lesson/${id}`;
                       return (
                         <li key={id}>
                           <Link
                             href={href}
                             className="-mx-3 flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-paper-deep/70"
                           >
-                            {locked ? (
+                            {locked || need ? (
                               <Lock size={16} className="shrink-0 text-ink-muted" aria-hidden="true" />
                             ) : isPracticed ? (
                               <Check size={16} className="shrink-0 text-moss" aria-hidden="true" />
@@ -112,11 +121,13 @@ export default async function PlanPage() {
                               <Circle size={16} className="shrink-0 text-ink-muted" aria-hidden="true" />
                             )}
                             <span className="flex-1">
-                              <span className={locked ? "text-ink-soft" : "font-medium"}>{e.title}</span>
-                              <span className="ml-2 text-sm text-ink-muted">{SKILL_LABELS[e.skill]}</span>
+                              <span className={locked || need ? "text-ink-soft" : "font-medium"}>{e.title}</span>
+                              <span className="ml-2 text-sm text-ink-muted">
+                                {need ? `Needs ${TOOL_NEED_LABEL[need]}` : SKILL_LABELS[e.skill]}
+                              </span>
                             </span>
                             <span className="sr-only">
-                              {locked ? "(locked)" : isPracticed ? "(practiced)" : isRead ? "(lesson read)" : ""}
+                              {locked ? "(locked)" : need ? "(locked until you add the tool)" : isPracticed ? "(practiced)" : isRead ? "(lesson read)" : ""}
                             </span>
                           </Link>
                         </li>

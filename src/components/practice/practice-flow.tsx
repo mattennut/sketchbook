@@ -414,7 +414,7 @@ function SubmitView({
             <p className="mb-4 text-sm text-ink-muted">
               See how a critique works on one of our sample sketches. Doesn&apos;t use a free critique.
             </p>
-            <ul className="grid grid-cols-3 gap-3">
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {SAMPLES.map((s) => (
                 <li key={s.id}>
                   <button
