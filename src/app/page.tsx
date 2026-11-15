@@ -2,6 +2,11 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PRICE_LABEL, FREE_CRITIQUES } from "@/lib/access";
 import { HeroSamples } from "@/components/hero-samples";
+import { getSession } from "@/lib/session";
+import { getDb } from "@/lib/db";
+import { currentWeek, getActivePlan } from "@/lib/plan";
+import { getProgressSets } from "@/lib/progress";
+import { SPECIALIZATION_INFO, isSpecialization } from "@/lib/skills";
 
 const STEPS = [
   {
@@ -18,7 +23,26 @@ const STEPS = [
   },
 ];
 
-export default function Home() {
+/** Returning guests (a plan already exists for this browser) get "Go to my course" instead of the sign-up buttons. */
+async function loadReturning(): Promise<{ week: number; specialization: string } | null> {
+  try {
+    const session = await getSession();
+    if (!session) return null;
+    const db = await getDb();
+    const plan = await getActivePlan(db, session.id);
+    if (!plan) return null;
+    const { practiced } = await getProgressSets(db, session.id);
+    return {
+      week: currentWeek(plan, practiced),
+      specialization: isSpecialization(plan.specialization) ? SPECIALIZATION_INFO[plan.specialization].label : "",
+    };
+  } catch {
+    return null; // never block the landing page on the database
+  }
+}
+
+export default async function Home() {
+  const returning = await loadReturning();
   return (
     <>
       {/* Hero over Gainsborough's "Cornard Wood" (1748, public domain), washed with paper tone for legibility. */}
@@ -44,17 +68,36 @@ export default function Home() {
               A drawing coach for grown-ups with day jobs: a plan built around your eye, ten-minute lessons, and feedback
               on photos of your real sketchbook pages.
             </p>
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-              <Link href="/assessment" className="btn btn-primary px-7 text-lg">
-                Start free assessment <ArrowRight size={18} aria-hidden="true" />
-              </Link>
-              <Link href="/assessment?mode=default" className="btn btn-secondary bg-sheet/70 px-6 text-lg backdrop-blur-[2px]">
-                Take the default course
-              </Link>
-            </div>
-            <p className="mt-4 text-sm text-ink-soft">
-              Assessment: about 5 minutes · Default course: start in under a minute · No sign-up
-            </p>
+            {returning ? (
+              <>
+                <div className="mt-10">
+                  <Link href="/plan" className="btn btn-primary px-7 text-lg">
+                    Go to my course <ArrowRight size={18} aria-hidden="true" />
+                  </Link>
+                </div>
+                <p className="mt-4 text-sm text-ink-soft">
+                  Welcome back — you&apos;re in week {returning.week} of 12
+                  {returning.specialization ? ` · ${returning.specialization}` : ""}.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="mt-10 flex flex-wrap items-center gap-3">
+                  <Link href="/assessment" className="btn btn-primary px-7 text-lg">
+                    Start free assessment <ArrowRight size={18} aria-hidden="true" />
+                  </Link>
+                  <Link
+                    href="/assessment?mode=default"
+                    className="btn btn-secondary bg-sheet/70 px-6 text-lg backdrop-blur-[2px]"
+                  >
+                    Take the default course
+                  </Link>
+                </div>
+                <p className="mt-4 text-sm text-ink-soft">
+                  Assessment: about 5 minutes · Default course: start in under a minute · No sign-up
+                </p>
+              </>
+            )}
           </div>
 
           <HeroSamples />
@@ -99,9 +142,15 @@ export default function Home() {
             </p>
           </div>
           <div className="flex items-start sm:justify-end">
-            <Link href="/assessment" className="btn btn-primary text-lg">
-              Start free assessment <ArrowRight size={18} aria-hidden="true" />
-            </Link>
+            {returning ? (
+              <Link href="/plan" className="btn btn-primary text-lg">
+                Go to my course <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+            ) : (
+              <Link href="/assessment" className="btn btn-primary text-lg">
+                Start free assessment <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+            )}
           </div>
         </div>
       </section>
