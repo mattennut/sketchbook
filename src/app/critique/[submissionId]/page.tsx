@@ -10,6 +10,7 @@ import { getSample } from "@/lib/samples";
 import { SKILL_LABELS, isSkill, type LevelBand } from "@/lib/skills";
 import type { CritiqueOutput } from "@/lib/ai/prompts";
 import { ErrorState } from "@/components/states";
+import { getPracticeStatus } from "@/lib/practice-status";
 
 export const metadata: Metadata = { title: "Your critique" };
 
@@ -28,7 +29,7 @@ function ScoreDots({ score, label }: { score: number; label: string }) {
 export default async function CritiquePage({ params }: Props) {
   const { submissionId } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(submissionId)) notFound();
-  const { db, session, byId } = await loadGuestContext();
+  const { db, session, plan, byId } = await loadGuestContext();
   if (!session) redirect("/");
 
   const [sub] = await db
@@ -60,6 +61,13 @@ export default async function CritiquePage({ params }: Props) {
 
   const criterion = (id: string) => task?.rubric.find((r) => r.id === id);
   const avg = sub.overallScore;
+
+  // Practice status for this lesson: best score on this exercise + the next one still to do.
+  const practice =
+    plan && entry ? (await getPracticeStatus(db, session.id, plan, [entry])).get(entry.id) ?? null : null;
+  const thisPractice = practice?.find((p) => p.taskId === sub.taskId) ?? null;
+  const nextPractice = practice?.find((p) => p.best === null) ?? null;
+  const done = practice?.filter((p) => p.best !== null).length ?? 0;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-2 sm:px-8 sm:pt-6">
@@ -97,6 +105,51 @@ export default async function CritiquePage({ params }: Props) {
             <>
               <h1 className="text-3xl leading-[1.15] sm:text-[2.5rem]">{critique.summary}</h1>
 
+              {/* Score dashboard: overall + per-criterion, right under the headline */}
+              <section
+                className="mt-6 grid gap-5 rounded-2xl border border-rule bg-sheet p-5 sm:grid-cols-[6.75rem_1fr] sm:gap-5"
+                aria-labelledby="score-h"
+              >
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 sm:flex-col sm:gap-1 sm:border-r sm:border-rule sm:pr-5">
+                  <h2 id="score-h" className="eyebrow sm:order-first">
+                    Score
+                  </h2>
+                  <p className="font-display text-5xl leading-none tabular-nums">
+                    {avg !== null ? avg.toFixed(1) : "–"}
+                    <span className="ml-1 font-sans text-base text-ink-muted">/5</span>
+                  </p>
+                  {!sample && thisPractice?.best !== null && thisPractice && thisPractice.attempts > 1 ? (
+                    <p className="text-xs text-ink-muted">
+                      Best {thisPractice.best!.toFixed(1)} · {thisPractice.attempts} tries
+                    </p>
+                  ) : null}
+                  {!sample && practice ? (
+                    <p className="text-xs text-ink-muted">
+                      {done} of {practice.length} exercises done
+                    </p>
+                  ) : null}
+                </div>
+                <dl className="grid content-center gap-2.5">
+                  {critique.scores.map((s) => {
+                    const c = criterion(s.criterionId);
+                    const label = c?.criterion ?? s.criterionId;
+                    return (
+                      <div key={s.criterionId} className="grid grid-cols-[minmax(0,1fr)_4.75rem_1rem] items-center gap-3">
+                        <dt className="text-sm leading-snug">{label}</dt>
+                        <dd className="flex gap-[3px]" role="img" aria-label={`${label}: ${s.score} out of 5`}>
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <span key={n} className={`h-2 flex-1 rounded-[2px] ${n <= s.score ? "bg-ink" : "bg-paper-deep"}`} />
+                          ))}
+                        </dd>
+                        <dd className="text-right font-display tabular-nums" aria-hidden="true">
+                          {s.score}
+                        </dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+              </section>
+
               <section className="mt-8 rounded-2xl border-l-4 border-accent bg-accent-wash/70 px-6 py-5" aria-labelledby="fix-h">
                 <p id="fix-h" className="eyebrow text-accent-deep">
                   The one thing to work on
@@ -119,24 +172,46 @@ export default async function CritiquePage({ params }: Props) {
                 </ul>
               </section>
 
-              <section className="mt-8 rounded-2xl border border-rule bg-sheet p-5" aria-labelledby="drill-h">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 id="drill-h" className="eyebrow">
-                    Drill for next time
-                  </h2>
-                  <span className="inline-flex items-center gap-1.5 text-sm text-ink-muted">
-                    <Clock size={14} aria-hidden="true" /> {critique.drill.minutes} min
-                  </span>
-                </div>
-                <p className="mt-2 text-lg font-semibold">{critique.drill.title}</p>
-                <p className="mt-1 leading-relaxed text-ink-soft">{critique.drill.instructions}</p>
-              </section>
+              {(() => {
+                const body = (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <h2 id="drill-h" className="eyebrow">
+                        Drill for next time
+                      </h2>
+                      <span className="inline-flex items-center gap-1.5 text-sm text-ink-muted">
+                        <Clock size={14} aria-hidden="true" /> {critique.drill.minutes} min
+                      </span>
+                    </div>
+                    <p className="mt-2 text-lg font-semibold">{critique.drill.title}</p>
+                    <p className="mt-1 leading-relaxed text-ink-soft">{critique.drill.instructions}</p>
+                  </>
+                );
+                // Clickable while the lesson still has an exercise to do: leads straight into it.
+                return nextPractice ? (
+                  <Link
+                    href={`/practice/${sub.subtopicId}?task=${nextPractice.taskId}`}
+                    className="group mt-8 block rounded-2xl border border-rule bg-sheet p-5 transition-colors hover:border-ink"
+                    aria-labelledby="drill-h drill-cta"
+                  >
+                    {body}
+                    <span
+                      id="drill-cta"
+                      className="mt-4 inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-sheet transition-colors group-hover:bg-accent"
+                    >
+                      Practice next: {nextPractice.title} <ArrowRight size={16} aria-hidden="true" />
+                    </span>
+                  </Link>
+                ) : (
+                  <section className="mt-8 rounded-2xl border border-rule bg-sheet p-5" aria-labelledby="drill-h">
+                    {body}
+                  </section>
+                );
+              })()}
 
               <details className="group mt-8 border-t border-rule pt-5">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
-                  <span className="font-semibold">
-                    Rubric scores{avg !== null ? <span className="ml-2 font-normal text-ink-muted">avg {avg.toFixed(1)} / 5</span> : null}
-                  </span>
+                  <span className="font-semibold">Why these scores</span>
                   <span className="text-sm text-ink-muted group-open:hidden">Show</span>
                   <span className="hidden text-sm text-ink-muted group-open:inline">Hide</span>
                 </summary>

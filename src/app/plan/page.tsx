@@ -8,6 +8,8 @@ import { currentWeek } from "@/lib/plan";
 import { canOpenSubtopic } from "@/lib/access";
 import { SKILL_LABELS, SPECIALIZATION_INFO, isSpecialization } from "@/lib/skills";
 import { TOOL_NEED_LABEL, hasToolsFor, toolNeedFor } from "@/lib/equipment-rules";
+import { getPracticeStatus } from "@/lib/practice-status";
+import { PracticeList } from "@/components/plan/practice-list";
 
 export const metadata: Metadata = { title: "Your 12-week plan" };
 
@@ -25,6 +27,14 @@ export default async function PlanPage() {
   const total = plan.weeks.reduce((n, w) => n + w.subtopicIds.length, 0);
   const done = plan.weeks.flatMap((w) => w.subtopicIds).filter((id) => practiced.has(id)).length;
   const specLabel = isSpecialization(plan.specialization) ? SPECIALIZATION_INFO[plan.specialization].label : "";
+
+  // Practices are listed under every lesson the learner has finished reading (and can open).
+  const finished = plan.weeks
+    .flatMap((w) => w.subtopicIds)
+    .filter((id) => lessonDone.has(id) && canOpenSubtopic(session, plan, id) && hasToolsFor(session.equipment, id))
+    .map((id) => byId.get(id))
+    .filter((e): e is NonNullable<typeof e> => !!e);
+  const practices = await getPracticeStatus(db, session.id, plan, finished);
 
   return (
     <div className="mx-auto max-w-3xl px-4 pt-6 sm:px-8 sm:pt-12">
@@ -45,7 +55,17 @@ export default async function PlanPage() {
 
       <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
         {nextEntry ? (
-          <Link href={lessonDone.has(nextEntry.id) ? `/practice/${nextEntry.id}` : `/lesson/${nextEntry.id}`} className="btn btn-primary">
+          <Link
+            href={
+              lessonDone.has(nextEntry.id)
+                ? (() => {
+                    const open = practices.get(nextEntry.id)?.find((p) => p.best === null);
+                    return `/practice/${nextEntry.id}${open ? `?task=${open.taskId}` : ""}`;
+                  })()
+                : `/lesson/${nextEntry.id}`
+            }
+            className="btn btn-primary"
+          >
             {lessonDone.has(nextEntry.id) ? "Practice" : "Continue"}: {nextEntry.title}
             <ArrowRight size={18} aria-hidden="true" />
           </Link>
@@ -98,13 +118,7 @@ export default async function PlanPage() {
                       const isPracticed = practiced.has(id);
                       const isRead = lessonDone.has(id);
                       const need = hasToolsFor(session.equipment, id) ? null : toolNeedFor(id);
-                      const href = locked
-                        ? `/upgrade?from=${id}`
-                        : need
-                          ? "/progress#equipment"
-                          : isRead && !isPracticed
-                            ? `/practice/${id}`
-                            : `/lesson/${id}`;
+                      const href = locked ? `/upgrade?from=${id}` : need ? "/progress#equipment" : `/lesson/${id}`;
                       return (
                         <li key={id}>
                           <Link
@@ -130,6 +144,7 @@ export default async function PlanPage() {
                               {locked ? "(locked)" : need ? "(locked until you add the tool)" : isPracticed ? "(practiced)" : isRead ? "(lesson read)" : ""}
                             </span>
                           </Link>
+                          {practices.has(id) ? <PracticeList subtopicId={id} items={practices.get(id) ?? null} /> : null}
                         </li>
                       );
                     })}
