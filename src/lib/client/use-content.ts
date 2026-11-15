@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+/** Errors a retry can't fix (site setup or credit); show a way back instead of "Try again". */
+export function isSetupError(code: string | undefined): boolean {
+  return code === "misconfigured" || code === "quota" || code === "not_configured";
+}
+
 export type ContentResult<T> =
   | { status: "loading" }
   | { status: "generating" }

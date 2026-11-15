@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Camera, Clock, ImageUp, RefreshCw } from "lucide-react";
 import type { StoredTask, StoredTaskSet } from "@/lib/content";
-import { useLessonContent } from "@/lib/client/use-content";
+import { isSetupError, useLessonContent } from "@/lib/client/use-content";
 import { prepareImage } from "@/lib/client/resize";
 import { SAMPLES } from "@/lib/samples";
 import { SKILL_LABELS, isSkill } from "@/lib/skills";
@@ -61,9 +61,15 @@ export function PracticeFlow({
         title="Practice isn't ready"
         message={state.message}
         action={
-          <button className="btn btn-primary" onClick={retry}>
-            Try again
-          </button>
+          isSetupError(state.code) ? (
+            <Link href="/plan" className="btn btn-primary">
+              Back to my plan
+            </Link>
+          ) : (
+            <button className="btn btn-primary" onClick={retry}>
+              Try again
+            </button>
+          )
         }
       />
     );

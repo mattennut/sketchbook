@@ -9,6 +9,8 @@ export type AiErrorCode =
   | "daily_cap"
   | "refused"
   | "invalid_output"
+  | "misconfigured"
+  | "quota"
   | "upstream";
 
 export class AiError extends Error {
@@ -27,8 +29,29 @@ export const AI_ERROR_COPY: Record<AiErrorCode, string> = {
   daily_cap: "The AI coach has reached today's usage cap. Please come back tomorrow.",
   refused: "The coach couldn't review this one. Try a different image.",
   invalid_output: "The coach got muddled writing this up. Please try again.",
+  misconfigured: "The AI coach isn't set up correctly on this site right now, so trying again won't help yet. Please check back later.",
+  quota: "The AI coach has used up its credit for now. Please check back later.",
   upstream: "The AI service is busy right now. Please try again in a minute.",
 };
+
+/**
+ * Turns an OpenAI API error into the right user-facing category. Only genuinely
+ * transient failures (rate limits, 5xx, timeouts) are "busy"; a wrong model name,
+ * bad key or exhausted credit is a setup problem that retrying won't fix.
+ */
+export function classifyApiError(err: InstanceType<typeof OpenAI.APIError>): AiErrorCode {
+  const code = String(err.code ?? "");
+  const msg = (err.message ?? "").toLowerCase();
+  if (err.status === 401 || err.status === 403) return "misconfigured"; // bad / revoked key, no model access
+  if (err.status === 404 || code === "model_not_found" || msg.includes("does not exist") || msg.includes("deprecated")) {
+    return "misconfigured"; // wrong or retired OPENAI_MODEL
+  }
+  if (err.status === 400 && msg.includes("model")) return "misconfigured";
+  if (err.status === 429 && (code === "insufficient_quota" || msg.includes("quota") || msg.includes("billing"))) {
+    return "quota";
+  }
+  return "upstream"; // 429 rate limit, 5xx, network/timeouts
+}
 
 export function aiModel(): string {
   return process.env.OPENAI_MODEL || "gpt-5.4-mini";
@@ -194,8 +217,9 @@ export async function generateStructured<S extends z.ZodType>(opts: {
     await logAiFinish(opts.db, callId, "error", usage).catch(() => {});
     if (err instanceof AiError) throw err;
     if (err instanceof OpenAI.APIError) {
-      console.error(`[ai:${opts.kind}] API error ${err.status}: ${err.message}`);
-      throw new AiError("upstream", err.message);
+      const code = classifyApiError(err);
+      console.error(`[ai:${opts.kind}] API error ${err.status} (${code}, model=${model}): ${err.message}`);
+      throw new AiError(code, err.message);
     }
     console.error(`[ai:${opts.kind}]`, err);
     throw new AiError("upstream", err instanceof Error ? err.message : String(err));

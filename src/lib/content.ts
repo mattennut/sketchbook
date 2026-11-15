@@ -224,7 +224,15 @@ export async function ensureLessonContent<T extends StoredDeck | StoredTaskSet>(
   if (row?.status === "ready") return { status: "ready", content: row.content as T };
   const stale = row?.status === "generating" && Date.now() - row.startedAt.getTime() > STALE_MS;
   if (row?.status === "generating" && !stale) return { status: "generating" };
-  if (row?.status === "failed" && !opts.retry) return { status: "failed", error: row.error ?? "server_error" };
+  // Failures caused by the environment (busy API, setup, credit, caps) heal on their own once
+  // fixed, so they're retried automatically after a short cooldown instead of staying stuck.
+  const autoRetry =
+    row?.status === "failed" &&
+    !["invalid_output", "refused"].includes(row.error ?? "") &&
+    Date.now() - row.updatedAt.getTime() > 30_000;
+  if (row?.status === "failed" && !opts.retry && !autoRetry) {
+    return { status: "failed", error: row.error ?? "server_error" };
+  }
 
   if (!aiConfigured()) return { status: "failed", error: "not_configured" };
   const budget = await checkAiBudget(db, sessionId, kind);

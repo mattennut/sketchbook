@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import type { StoredDeck } from "@/lib/content";
-import { useLessonContent } from "@/lib/client/use-content";
+import { isSetupError, useLessonContent } from "@/lib/client/use-content";
 import { InkLoader } from "../ink-loader";
 import { ErrorState } from "../states";
 import { DeckViewer } from "./deck-viewer";
@@ -26,6 +26,10 @@ export function DeckLoader({ subtopicId, title }: { subtopicId: string; title: s
           state.code === "paywall" ? (
             <Link href="/upgrade" className="btn btn-primary">
               See Plus
+            </Link>
+          ) : isSetupError(state.code) ? (
+            <Link href="/plan" className="btn btn-primary">
+              Back to my plan
             </Link>
           ) : (
             <button className="btn btn-primary" onClick={retry}>

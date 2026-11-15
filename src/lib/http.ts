@@ -9,7 +9,11 @@ export function jsonError(status: number, code: string, message: string, extra?:
 export function handleRouteError(err: unknown, context: string) {
   if (err instanceof AiError) {
     const status =
-      err.code === "session_limit" || err.code === "daily_cap" ? 429 : err.code === "not_configured" ? 503 : 502;
+      err.code === "session_limit" || err.code === "daily_cap"
+        ? 429
+        : err.code === "not_configured" || err.code === "misconfigured" || err.code === "quota"
+          ? 503
+          : 502;
     return jsonError(status, err.code, AI_ERROR_COPY[err.code]);
   }
   console.error(`[${context}]`, err);
